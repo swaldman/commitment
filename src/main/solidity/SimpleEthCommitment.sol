@@ -91,6 +91,27 @@ contract SimpleEthCommitment {
     msg.sender.transfer(toPay);
   }
 
+  // public accessors
+  function getState() public view returns (uint256 _state) {
+    _state = uint256(state);
+  }
+
+  // FIXME (stub generation issue)
+  //
+  // function getParticipants() public view returns( address[] memory _participants ) {
+  //   _participants = team.allKeys();
+  // }
+
+  function bondFor( address participant ) public view returns( uint256 amount ) {
+    ( bool exists, uint256 value ) = team.get( participant );
+    require( exists );
+    amount = value;
+  }
+
+  function isCommitted( address participant ) public view returns (bool _committed) {
+    _committed = committed[ participant ];
+  }
+
   // private utilities
 
   function complete() private {
