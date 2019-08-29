@@ -4,8 +4,24 @@ import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/9fdc91758dbd
 import "https://github.com/swaldman/sol-key-iterable-mapping/blob/8773f95687c6467979936f32b0aaa72f921e4a75/src/main/solidity/AddressUInt256KeyIterableMapping.sol";
 
 contract SimpleEthCommitment {
+  // libraries
   using SafeMath for uint256;
   using AddressUInt256KeyIterableMapping for AddressUInt256KeyIterableMapping.Store;
+
+  // event definitions
+  event Funded( address indexed funder, uint256 oldValue, uint256 newValue );
+  event Unfunded( address indexed funder, uint256 oldValue, uint256 newValue );
+  event Committed( address indexed funder );
+  event CommittingStarts( address indexed firstComitter );
+  event CommitmentsCanceled( address indexed withdrawer );
+  event Locked( address indexed lastCommitter );
+  event Burnt( address indexed burner );
+  event Completed();
+  event Withdrawal( address indexed withdrawer, uint256 amount );
+
+  // STILL TO DO!!! Emit events in code
+
+  // storage
 
   AddressUInt256KeyIterableMapping.Store private team;
   mapping (address=>bool) public committed;
@@ -25,6 +41,8 @@ contract SimpleEthCommitment {
     expiration = 0;
     state      = State.Funding;
   }
+
+  // public functions
 
   function fund() public payable {
     require( state == State.Funding );
@@ -72,6 +90,8 @@ contract SimpleEthCommitment {
     if ( state == State.Committing ) uncommit();
     msg.sender.transfer(toPay);
   }
+
+  // private utilities
 
   function complete() private {
     require( state == State.Locked );
