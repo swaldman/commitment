@@ -96,11 +96,9 @@ contract SimpleEthCommitment {
     _state = uint256(state);
   }
 
-  // FIXME (stub generation issue)
-  //
-  // function getParticipants() public view returns( address[] memory _participants ) {
-  //   _participants = team.allKeys();
-  // }
+  function getParticipants() public view returns( address[] memory _participants ) {
+    _participants = team.allKeys();
+  }
 
   function bondFor( address participant ) public view returns( uint256 amount ) {
     ( bool exists, uint256 value ) = team.get( participant );
