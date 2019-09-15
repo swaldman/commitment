@@ -9,8 +9,9 @@ contract SimpleEthCommitment {
   using AddressUInt256KeyIterableMapping for AddressUInt256KeyIterableMapping.Store;
 
   // event definitions
+  event Created();
   event Funded( address indexed funder, uint256 oldValue, uint256 newValue );
-  event Unfunded( address indexed funder, uint256 oldValue, uint256 newValue );
+  event Unfunded( address indexed funder, uint256 amount );
   event Committed( address indexed funder );
   event CommittingStarts( address indexed firstComitter );
   event CommitmentsCanceled( address indexed withdrawer );
@@ -40,6 +41,8 @@ contract SimpleEthCommitment {
     duration   = _duration;
     expiration = 0;
     state      = State.Funding;
+
+    emit Created();
   }
 
   // public functions
@@ -51,6 +54,8 @@ contract SimpleEthCommitment {
     uint256 newValue = value.add( msg.value );
     team.put( msg.sender, newValue );
     require( team.keyCount() <= MAX_TEAM_SIZE );
+
+    emit Funded( msg.sender, value, newValue );
   }
 
   function commit() public {
@@ -69,8 +74,11 @@ contract SimpleEthCommitment {
     else {
       if ( state == State.Funding ) {
 	state = State.Committing;
+	emit CommittingStarts( msg.sender );
       }
     }
+
+    emit Committed( msg.sender );
   }
 
   function burn() public {
@@ -78,6 +86,8 @@ contract SimpleEthCommitment {
     require( state == State.Locked );
     state = State.Burnt;
     address(0).transfer( address(this).balance );
+
+    emit Burnt( msg.sender );
   }
 
   function withdraw() public {
@@ -89,6 +99,18 @@ contract SimpleEthCommitment {
     delete committed[msg.sender];
     if ( state == State.Committing ) uncommit();
     msg.sender.transfer(toPay);
+
+    if ( state == State.Complete ) {
+      emit Withdrawal( msg.sender, toPay );
+    }
+    else if ( state == State.Funding ) {
+      emit Unfunded( msg.sender, toPay );
+    }
+    else { 
+      // we started in Funding | Committing | Complete, and switched to Funding if Committing
+      // so we should be Funding | Complete here
+      revert();
+    }
   }
 
   // public accessors
@@ -115,12 +137,16 @@ contract SimpleEthCommitment {
   function complete() private {
     require( state == State.Locked );
     state = State.Complete;
+
+    emit Completed();
   }
 
   function lock() private {
     require( state == State.Committing );
     state = State.Locked;
     expiration = now.add( duration );
+
+    emit Locked( msg.sender );
   }
 
   // dangerous, unbounded iteration.
@@ -139,5 +165,7 @@ contract SimpleEthCommitment {
     uint256 count = team.keyCount();
     for ( uint256 i = 0; i < count; ++i ) delete committed[ team.keyAt(i) ];
     state = State.Funding;
+
+    emit CommitmentsCanceled( msg.sender );
   }
 }
